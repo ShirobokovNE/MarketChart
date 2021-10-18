@@ -31,7 +31,7 @@ class MarketChartState {
                 (scrollOffset.value - it.scrolledCandles).coerceAtLeast(0f)
         } else {
             scrollOffset.value =
-                (scrollOffset.value - it.scrolledCandles).coerceAtMost(candles.value.lastIndex.toFloat() - 1)
+                (scrollOffset.value - it.scrolledCandles).coerceAtMost(candles.value.lastIndex.toFloat())
         }
         it
     }
@@ -50,7 +50,7 @@ class MarketChartState {
         if (candles.value.isNotEmpty()) {
             candles.value.subList(
                 scrollOffset.value.roundToInt().coerceAtLeast(0),
-                (scrollOffset.value.roundToInt() + visibleCandleCount.value).coerceAtMost(candles.value.lastIndex)
+                (scrollOffset.value.roundToInt() + visibleCandleCount.value).coerceAtMost(candles.value.size)
             )
         } else {
             emptyList()
