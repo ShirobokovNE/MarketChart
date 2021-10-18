@@ -24,7 +24,10 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.tooling.preview.Devices
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 class ChartActivity : AppCompatActivity() {
@@ -139,4 +142,37 @@ fun MarketChart(state: MarketChartState) {
             }
         }
     }
+}
+
+@Preview(device = Devices.PIXEL_2)
+@Composable
+fun MarketChartPreview() {
+    val chartState = MarketChartState()
+    chartState.setCandles(
+        listOf(
+            Candle(LocalDateTime.now().plusHours(21), 16f, 20f, 22f, 15f),
+            Candle(LocalDateTime.now().plusHours(20), 11f, 16f, 16f, 10f),
+            Candle(LocalDateTime.now().plusHours(19), 8f, 10f, 11f, 7f),
+            Candle(LocalDateTime.now().plusHours(18), 6f, 8f, 9f, 5f),
+            Candle(LocalDateTime.now().plusHours(17), 10f, 6f, 11f, 6f),
+            Candle(LocalDateTime.now().plusHours(16), 14f, 10f, 15f, 10f),
+            Candle(LocalDateTime.now().plusHours(15), 12f, 14f, 15f, 10f),
+            Candle(LocalDateTime.now().plusHours(14), 10f, 12f, 13f, 10f),
+            Candle(LocalDateTime.now().plusHours(13), 15f, 10f, 16f, 9f),
+            Candle(LocalDateTime.now().plusHours(12), 14f, 15f, 15f, 12f),
+            Candle(LocalDateTime.now().plusHours(11), 14f, 14f, 15f, 10f),
+            Candle(LocalDateTime.now().plusHours(10), 12f, 14f, 15f, 10f),
+            Candle(LocalDateTime.now().plusHours(9), 10f, 12f, 13f, 10f),
+            Candle(LocalDateTime.now().plusHours(8), 11f, 10f, 16f, 9f),
+            Candle(LocalDateTime.now().plusHours(7), 10f, 11f, 12f, 10f),
+            Candle(LocalDateTime.now().plusHours(6), 6f, 10f, 12f, 4f),
+            Candle(LocalDateTime.now().plusHours(5), 4f, 6f, 7f, 4f),
+            Candle(LocalDateTime.now().plusHours(4), 6f, 4f, 8f, 4f),
+            Candle(LocalDateTime.now().plusHours(3), 3f, 6f, 6f, 2f),
+            Candle(LocalDateTime.now().plusHours(2), 4f, 3f, 5f, 2f),
+            Candle(LocalDateTime.now().plusHours(1), 2f, 4f, 6f, 1f)
+        ).sorted()
+    )
+
+    MarketChart(state = chartState)
 }
