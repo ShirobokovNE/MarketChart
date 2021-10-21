@@ -1,6 +1,7 @@
 package ru.shirobokov.marketchart
 
 import androidx.compose.foundation.gestures.ScrollableState
+import androidx.compose.foundation.gestures.TransformableState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -17,13 +18,14 @@ class MarketChartState {
 
     private val decimalFormat = DecimalFormat("##.00")
 
-    private var scale = 60f
-    private val visibleCandleCount = mutableStateOf(scale.roundToInt())
+    private val visibleCandleCount = mutableStateOf(START_CANDLES)
     private val scrollOffset = mutableStateOf(0f)
     private var candleInGrid = Float.MAX_VALUE
 
     private val maxPrice by derivedStateOf { visibleCandles.maxOfOrNull { it.high } ?: 0f }
     private val minPrice by derivedStateOf { visibleCandles.minOfOrNull { it.low } ?: 0f }
+
+    val transformableState = TransformableState { zoomChange, _, _ -> scaleView(zoomChange) }
 
     val scrollableState = ScrollableState {
         if (it > 0) {
@@ -57,19 +59,17 @@ class MarketChartState {
         }
     }
 
+    private fun scaleView(zoomChange: Float) {
+        if ((zoomChange < 1f && visibleCandleCount.value / zoomChange <= MAX_CANDLES) ||
+            (zoomChange > 1f && visibleCandleCount.value / zoomChange >= MIN_CANDLES)
+        ) {
+            visibleCandleCount.value = (visibleCandleCount.value / zoomChange).roundToInt()
+        }
+    }
+
     fun setViewSize(width: Float, height: Float) {
         viewWidth = width
         viewHeight = height
-    }
-
-    fun scaleView(zoomChange: Float) {
-        if ((zoomChange < 1f && scale / zoomChange <= MAX_CANDLES) ||
-            (zoomChange > 1f && scale / zoomChange >= MIN_CANDLES)
-        ) {
-            scale /= zoomChange
-            visibleCandleCount.value = (scale / zoomChange).roundToInt()
-            calculateGridWidth()
-        }
     }
 
     fun calculateGridWidth() {
@@ -102,6 +102,7 @@ class MarketChartState {
         private val MIN_GRID_WIDTH = 250.dp.value
         private const val MAX_CANDLES = 100
         private const val MIN_CANDLES = 30
+        private const val START_CANDLES = 60
         private const val PRICES_COUNT = 10
     }
 }

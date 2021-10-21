@@ -1,7 +1,5 @@
 package ru.shirobokov.marketchart
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
@@ -11,7 +9,7 @@ import java.time.LocalDateTime
 
 class ChartViewModel : ViewModel() {
 
-    val chartState by mutableStateOf(MarketChartState())
+    val chartState = MarketChartState()
 
     init {
         viewModelScope.launch {

@@ -8,13 +8,10 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.rememberTransformableState
 import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -46,17 +43,15 @@ class ChartActivity : AppCompatActivity() {
 
 @Composable
 fun MarketChart(state: MarketChartState) {
+    val timeFormatter = DateTimeFormatter.ofPattern("dd.MM, HH:mm")
+    val bounds = Rect()
+    val textPaint = Paint().asFrameworkPaint().apply {
+        isAntiAlias = true
+        textSize = 35.sp.value
+        color = Color.White.toArgb()
+    }
 
-    val zoomState = rememberTransformableState { zoomChange, _, _ -> state.scaleView(zoomChange) }
-
-    BoxWithConstraints(
-        modifier = Modifier
-            .fillMaxWidth()
-            .fillMaxHeight()
-            .background(Color(0xFF182028))
-            .scrollable(state.scrollableState, Orientation.Horizontal)
-            .transformable(zoomState)
-    ) {
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
 
         val chartWidth = constraints.maxWidth - 128.dp.value
         val chartHeight = constraints.maxHeight - 64.dp.value
@@ -64,13 +59,13 @@ fun MarketChart(state: MarketChartState) {
         state.setViewSize(chartWidth, chartHeight)
         state.calculateGridWidth()
 
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val textPaint = Paint().asFrameworkPaint().apply {
-                isAntiAlias = true
-                textSize = 35.sp.value
-                color = Color.White.toArgb()
-            }
-
+        Canvas(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xFF182028))
+                .scrollable(state.scrollableState, Orientation.Horizontal)
+                .transformable(state.transformableState)
+        ) {
             state.timeLines.value.forEach { candle ->
                 val offset = state.xOffset(candle)
                 if (offset !in 0f..chartWidth) return@forEach
@@ -82,8 +77,7 @@ fun MarketChart(state: MarketChartState) {
                     pathEffect = PathEffect.dashPathEffect(intervals = floatArrayOf(10f, 20f), phase = 5f)
                 )
                 drawIntoCanvas {
-                    val text = candle.time.format(DateTimeFormatter.ofPattern("dd.MM, HH:mm"))
-                    val bounds = Rect()
+                    val text = candle.time.format(timeFormatter)
                     textPaint.getTextBounds(text, 0, text.length, bounds)
                     val textHeight = bounds.height()
                     val textWidth = bounds.width()
@@ -107,7 +101,6 @@ fun MarketChart(state: MarketChartState) {
                         pathEffect = PathEffect.dashPathEffect(intervals = floatArrayOf(10f, 20f), phase = 5f)
                     )
                     drawIntoCanvas {
-                        val bounds = Rect()
                         textPaint.getTextBounds(value, 0, value.length, bounds)
                         val textHeight = bounds.height()
                         it.nativeCanvas.drawText(
@@ -124,14 +117,14 @@ fun MarketChart(state: MarketChartState) {
                 color = Color.White,
                 strokeWidth = 2.dp.value,
                 start = Offset(0f, chartHeight),
-                end = Offset(size.width, chartHeight)
+                end = Offset(chartWidth, chartHeight)
             )
 
             drawLine(
                 color = Color.White,
                 strokeWidth = 2.dp.value,
                 start = Offset(chartWidth, 0f),
-                end = Offset(chartWidth, size.height)
+                end = Offset(chartWidth, chartHeight)
             )
 
             state.visibleCandles.forEach { candle ->
@@ -142,11 +135,19 @@ fun MarketChart(state: MarketChartState) {
                     start = Offset(xOffset, state.yOffset(candle.low)),
                     end = Offset(xOffset, state.yOffset(candle.high))
                 )
-                drawRect(
-                    color = if (candle.open > candle.close) Color.Red else Color.Green,
-                    topLeft = Offset(xOffset - 6.dp.value, state.yOffset(candle.open)),
-                    size = Size(12.dp.value, state.yOffset(candle.close) - state.yOffset(candle.open))
-                )
+                if (candle.open > candle.close) {
+                    drawRect(
+                        color = Color.Red,
+                        topLeft = Offset(xOffset - 6.dp.value, state.yOffset(candle.open)),
+                        size = Size(12.dp.value, state.yOffset(candle.close) - state.yOffset(candle.open))
+                    )
+                } else {
+                    drawRect(
+                        color = Color.Green,
+                        topLeft = Offset(xOffset - 6.dp.value, state.yOffset(candle.close)),
+                        size = Size(12.dp.value, state.yOffset(candle.open) - state.yOffset(candle.close))
+                    )
+                }
             }
         }
     }
