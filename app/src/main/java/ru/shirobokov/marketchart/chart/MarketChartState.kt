@@ -1,10 +1,12 @@
-package ru.shirobokov.marketchart
+package ru.shirobokov.marketchart.chart
 
 import androidx.compose.foundation.gestures.ScrollableState
 import androidx.compose.foundation.gestures.TransformableState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.ui.unit.dp
 import java.text.DecimalFormat
 import kotlin.math.roundToInt
@@ -19,7 +21,7 @@ class MarketChartState {
     private val decimalFormat = DecimalFormat("##.00")
 
     private val visibleCandleCount = mutableStateOf(START_CANDLES)
-    private val scrollOffset = mutableStateOf(0f)
+    private val scrollOffset = mutableStateOf(UNINITIALIZED_SCROLL_OFFSET)
     private var candleInGrid = Float.MAX_VALUE
 
     private val maxPrice by derivedStateOf { visibleCandles.maxOfOrNull { it.high } ?: 0f }
@@ -45,7 +47,9 @@ class MarketChartState {
 
     val priceLines by derivedStateOf {
         val priceItem = (maxPrice - minPrice) / PRICES_COUNT
-        mutableListOf<String>().apply { repeat(PRICES_COUNT) { add(decimalFormat.format(maxPrice - priceItem * it)) } }
+        mutableListOf<String>().apply {
+            repeat(PRICES_COUNT) { add(decimalFormat.format(maxPrice - priceItem * it)) }
+        }
     }
 
     val visibleCandles by derivedStateOf {
@@ -92,9 +96,12 @@ class MarketChartState {
 
     fun yOffset(value: Float) = viewHeight * ((value - maxPrice) / (minPrice - maxPrice))
 
-    fun setCandles(newCandles: List<Candle>) {
+    fun setCandles(newCandles: List<Candle>?) {
+        if (newCandles.isNullOrEmpty()) return
         candles.value = newCandles
-        scrollOffset.value = newCandles.size.toFloat() - visibleCandleCount.value
+        if (scrollOffset.value == UNINITIALIZED_SCROLL_OFFSET) {
+            scrollOffset.value = newCandles.size.toFloat() - visibleCandleCount.value
+        }
     }
 
     companion object {
@@ -104,5 +111,17 @@ class MarketChartState {
         private const val MIN_CANDLES = 30
         private const val START_CANDLES = 60
         private const val PRICES_COUNT = 10
+        private const val UNINITIALIZED_SCROLL_OFFSET = -1f
+
+        @Suppress("CAST_NEVER_SUCCEEDS")
+        val Saver: Saver<MarketChartState, Any> = listSaver(
+            save = { listOf(it.scrollOffset.value, it.visibleCandleCount.value) },
+            restore = {
+                MarketChartState().apply {
+                    scrollOffset.value = it[0] as Float
+                    visibleCandleCount.value = it[1] as Int
+                }
+            }
+        )
     }
 }

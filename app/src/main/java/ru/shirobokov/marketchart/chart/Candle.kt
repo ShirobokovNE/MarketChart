@@ -1,4 +1,4 @@
-package ru.shirobokov.marketchart
+package ru.shirobokov.marketchart.chart
 
 import java.time.LocalDateTime
 
