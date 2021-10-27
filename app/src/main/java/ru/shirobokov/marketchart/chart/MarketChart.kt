@@ -27,10 +27,8 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 @Composable
-fun MarketChart(candles: List<Candle>?) {
-    val state = rememberSaveable(saver = MarketChartState.Saver) { MarketChartState() }
-    state.setCandles(candles)
-
+fun MarketChart(candles: List<Candle>) {
+    val state = rememberSaveable(saver = MarketChartState.Saver) { MarketChartState.getState(candles) }
     val timeFormatter = DateTimeFormatter.ofPattern("dd.MM, HH:mm")
     val bounds = Rect()
     val textPaint = Paint().asFrameworkPaint().apply {
@@ -53,7 +51,6 @@ fun MarketChart(candles: List<Candle>?) {
                 .scrollable(state.scrollableState, Orientation.Horizontal)
                 .transformable(state.transformableState)
         ) {
-
             drawLine(
                 color = Color.White,
                 strokeWidth = 2.dp.value,

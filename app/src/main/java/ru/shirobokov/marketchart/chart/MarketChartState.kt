@@ -13,15 +13,12 @@ import kotlin.math.roundToInt
 
 class MarketChartState {
 
-    private val candles = mutableStateOf(listOf<Candle>())
-
+    private var candles = listOf<Candle>()
+    private val visibleCandleCount = mutableStateOf(0)
+    private val scrollOffset = mutableStateOf(0f)
     private var viewWidth = 0f
     private var viewHeight = 0f
-
     private val decimalFormat = DecimalFormat("##.00")
-
-    private val visibleCandleCount = mutableStateOf(START_CANDLES)
-    private val scrollOffset = mutableStateOf(UNINITIALIZED_SCROLL_OFFSET)
     private var candleInGrid = Float.MAX_VALUE
 
     private val maxPrice by derivedStateOf { visibleCandles.maxOfOrNull { it.high } ?: 0f }
@@ -31,11 +28,9 @@ class MarketChartState {
 
     val scrollableState = ScrollableState {
         if (it > 0) {
-            scrollOffset.value =
-                (scrollOffset.value - it.scrolledCandles).coerceAtLeast(0f)
+            scrollOffset.value = (scrollOffset.value - it.scrolledCandles).coerceAtLeast(0f)
         } else {
-            scrollOffset.value =
-                (scrollOffset.value - it.scrolledCandles).coerceAtMost(candles.value.lastIndex.toFloat())
+            scrollOffset.value = (scrollOffset.value - it.scrolledCandles).coerceAtMost(candles.lastIndex.toFloat())
         }
         it
     }
@@ -53,10 +48,10 @@ class MarketChartState {
     }
 
     val visibleCandles by derivedStateOf {
-        if (candles.value.isNotEmpty()) {
-            candles.value.subList(
+        if (candles.isNotEmpty()) {
+            candles.subList(
                 scrollOffset.value.roundToInt().coerceAtLeast(0),
-                (scrollOffset.value.roundToInt() + visibleCandleCount.value).coerceAtMost(candles.value.size)
+                (scrollOffset.value.roundToInt() + visibleCandleCount.value).coerceAtMost(candles.size)
             )
         } else {
             emptyList()
@@ -82,11 +77,11 @@ class MarketChartState {
         when {
             currentGridWidth < MIN_GRID_WIDTH -> {
                 candleInGrid = MAX_GRID_WIDTH / candleWidth
-                timeLines.value = candles.value.filterIndexed { index, _ -> index % candleInGrid.roundToInt() == 0 }
+                timeLines.value = candles.filterIndexed { index, _ -> index % candleInGrid.roundToInt() == 0 }
             }
             currentGridWidth > MAX_GRID_WIDTH -> {
                 candleInGrid = MIN_GRID_WIDTH / candleWidth
-                timeLines.value = candles.value.filterIndexed { index, _ -> index % candleInGrid.roundToInt() == 0 }
+                timeLines.value = candles.filterIndexed { index, _ -> index % candleInGrid.roundToInt() == 0 }
             }
         }
     }
@@ -96,31 +91,30 @@ class MarketChartState {
 
     fun yOffset(value: Float) = viewHeight * ((value - maxPrice) / (minPrice - maxPrice))
 
-    fun setCandles(newCandles: List<Candle>?) {
-        if (newCandles.isNullOrEmpty()) return
-        candles.value = newCandles
-        if (scrollOffset.value == UNINITIALIZED_SCROLL_OFFSET) {
-            scrollOffset.value = newCandles.size.toFloat() - visibleCandleCount.value
-        }
-    }
-
     companion object {
-        private val MAX_GRID_WIDTH = 500.dp.value
-        private val MIN_GRID_WIDTH = 250.dp.value
+        private const val MAX_GRID_WIDTH = 500
+        private const val MIN_GRID_WIDTH = 250
         private const val MAX_CANDLES = 100
         private const val MIN_CANDLES = 30
         private const val START_CANDLES = 60
         private const val PRICES_COUNT = 10
-        private const val UNINITIALIZED_SCROLL_OFFSET = -1f
 
-        @Suppress("CAST_NEVER_SUCCEEDS")
+        fun getState(candles: List<Candle>, visibleCandleCount: Int? = null, scrollOffset: Float? = null) =
+            MarketChartState().apply {
+                this.candles = candles
+                this.visibleCandleCount.value = visibleCandleCount ?: START_CANDLES
+                this.scrollOffset.value = scrollOffset ?: candles.size.toFloat() - this.visibleCandleCount.value
+            }
+
+        @Suppress("UNCHECKED_CAST")
         val Saver: Saver<MarketChartState, Any> = listSaver(
-            save = { listOf(it.scrollOffset.value, it.visibleCandleCount.value) },
+            save = { listOf(it.candles, it.scrollOffset.value, it.visibleCandleCount.value) },
             restore = {
-                MarketChartState().apply {
-                    scrollOffset.value = it[0] as Float
-                    visibleCandleCount.value = it[1] as Int
-                }
+                getState(
+                    candles = it[0] as List<Candle>,
+                    visibleCandleCount = it[2] as Int,
+                    scrollOffset = it[1] as Float
+                )
             }
         )
     }
