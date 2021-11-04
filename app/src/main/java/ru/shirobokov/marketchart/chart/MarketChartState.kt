@@ -7,18 +7,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.listSaver
-import androidx.compose.ui.unit.dp
-import java.text.DecimalFormat
+import androidx.compose.runtime.setValue
 import kotlin.math.roundToInt
 
 class MarketChartState {
 
     private var candles = listOf<Candle>()
-    private val visibleCandleCount = mutableStateOf(0)
-    private val scrollOffset = mutableStateOf(0f)
+    private var visibleCandleCount by mutableStateOf(0)
+    private var scrollOffset by mutableStateOf(0f)
     private var viewWidth = 0f
     private var viewHeight = 0f
-    private val decimalFormat = DecimalFormat("##.00")
     private var candleInGrid = Float.MAX_VALUE
 
     private val maxPrice by derivedStateOf { visibleCandles.maxOfOrNull { it.high } ?: 0f }
@@ -27,31 +25,29 @@ class MarketChartState {
     val transformableState = TransformableState { zoomChange, _, _ -> scaleView(zoomChange) }
 
     val scrollableState = ScrollableState {
-        if (it > 0) {
-            scrollOffset.value = (scrollOffset.value - it.scrolledCandles).coerceAtLeast(0f)
+        scrollOffset = if (it > 0) {
+            (scrollOffset - it.scrolledCandles).coerceAtLeast(0f)
         } else {
-            scrollOffset.value = (scrollOffset.value - it.scrolledCandles).coerceAtMost(candles.lastIndex.toFloat())
+            (scrollOffset - it.scrolledCandles).coerceAtMost(candles.lastIndex.toFloat())
         }
         it
     }
 
     private val Float.scrolledCandles: Float
-        get() = this * visibleCandleCount.value.toFloat() / viewWidth
+        get() = this * visibleCandleCount.toFloat() / viewWidth
 
     val timeLines = mutableStateOf(listOf<Candle>())
 
     val priceLines by derivedStateOf {
         val priceItem = (maxPrice - minPrice) / PRICES_COUNT
-        mutableListOf<String>().apply {
-            repeat(PRICES_COUNT) { add(decimalFormat.format(maxPrice - priceItem * it)) }
-        }
+        mutableListOf<Float>().apply { repeat(PRICES_COUNT) { if (it > 0) add(maxPrice - priceItem * it) } }
     }
 
     val visibleCandles by derivedStateOf {
         if (candles.isNotEmpty()) {
             candles.subList(
-                scrollOffset.value.roundToInt().coerceAtLeast(0),
-                (scrollOffset.value.roundToInt() + visibleCandleCount.value).coerceAtMost(candles.size)
+                scrollOffset.roundToInt().coerceAtLeast(0),
+                (scrollOffset.roundToInt() + visibleCandleCount).coerceAtMost(candles.size)
             )
         } else {
             emptyList()
@@ -59,10 +55,10 @@ class MarketChartState {
     }
 
     private fun scaleView(zoomChange: Float) {
-        if ((zoomChange < 1f && visibleCandleCount.value / zoomChange <= MAX_CANDLES) ||
-            (zoomChange > 1f && visibleCandleCount.value / zoomChange >= MIN_CANDLES)
+        if ((zoomChange < 1f && visibleCandleCount / zoomChange <= MAX_CANDLES) ||
+            (zoomChange > 1f && visibleCandleCount / zoomChange >= MIN_CANDLES)
         ) {
-            visibleCandleCount.value = (visibleCandleCount.value / zoomChange).roundToInt()
+            visibleCandleCount = (visibleCandleCount / zoomChange).roundToInt()
         }
     }
 
@@ -72,7 +68,7 @@ class MarketChartState {
     }
 
     fun calculateGridWidth() {
-        val candleWidth = viewWidth / visibleCandleCount.value
+        val candleWidth = viewWidth / visibleCandleCount
         val currentGridWidth = candleInGrid * candleWidth
         when {
             currentGridWidth < MIN_GRID_WIDTH -> {
@@ -86,10 +82,8 @@ class MarketChartState {
         }
     }
 
-    fun xOffset(candle: Candle) =
-        viewWidth * visibleCandles.indexOf(candle).toFloat() / visibleCandleCount.value.toFloat()
-
-    fun yOffset(value: Float) = viewHeight * ((value - maxPrice) / (minPrice - maxPrice))
+    fun xOffset(candle: Candle) = viewWidth * visibleCandles.indexOf(candle).toFloat() / visibleCandleCount.toFloat()
+    fun yOffset(value: Float) = viewHeight * (maxPrice - value) / (maxPrice - minPrice)
 
     companion object {
         private const val MAX_GRID_WIDTH = 500
@@ -102,13 +96,13 @@ class MarketChartState {
         fun getState(candles: List<Candle>, visibleCandleCount: Int? = null, scrollOffset: Float? = null) =
             MarketChartState().apply {
                 this.candles = candles
-                this.visibleCandleCount.value = visibleCandleCount ?: START_CANDLES
-                this.scrollOffset.value = scrollOffset ?: candles.size.toFloat() - this.visibleCandleCount.value
+                this.visibleCandleCount = visibleCandleCount ?: START_CANDLES
+                this.scrollOffset = scrollOffset ?: candles.size.toFloat() - this.visibleCandleCount
             }
 
         @Suppress("UNCHECKED_CAST")
         val Saver: Saver<MarketChartState, Any> = listSaver(
-            save = { listOf(it.candles, it.scrollOffset.value, it.visibleCandleCount.value) },
+            save = { listOf(it.candles, it.scrollOffset, it.visibleCandleCount) },
             restore = {
                 getState(
                     candles = it[0] as List<Candle>,

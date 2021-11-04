@@ -23,12 +23,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ru.shirobokov.marketchart.chart.Candle
 import ru.shirobokov.marketchart.chart.MarketChartState
+import java.text.DecimalFormat
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 @Composable
 fun MarketChart(candles: List<Candle>) {
+
     val state = rememberSaveable(saver = MarketChartState.Saver) { MarketChartState.getState(candles) }
+
+    val decimalFormat = DecimalFormat("##.00")
     val timeFormatter = DateTimeFormatter.ofPattern("dd.MM, HH:mm")
     val bounds = Rect()
     val textPaint = Paint().asFrameworkPaint().apply {
@@ -89,26 +93,25 @@ fun MarketChart(candles: List<Candle>) {
                 }
             }
 
-            state.priceLines.forEachIndexed { index: Int, value: String ->
-                if (index > 0) {
-                    val offsetPercent = chartHeight / state.priceLines.size * index
-                    drawLine(
-                        color = Color.White,
-                        strokeWidth = 1.dp.value,
-                        start = Offset(0f, offsetPercent),
-                        end = Offset(chartWidth, offsetPercent),
-                        pathEffect = PathEffect.dashPathEffect(intervals = floatArrayOf(10f, 20f), phase = 5f)
+            state.priceLines.forEach { value: Float ->
+                val yOffset = state.yOffset(value)
+                val text = decimalFormat.format(value)
+                drawLine(
+                    color = Color.White,
+                    strokeWidth = 1.dp.value,
+                    start = Offset(0f, yOffset),
+                    end = Offset(chartWidth, yOffset),
+                    pathEffect = PathEffect.dashPathEffect(intervals = floatArrayOf(10f, 20f), phase = 5f)
+                )
+                drawIntoCanvas {
+                    textPaint.getTextBounds(text, 0, text.length, bounds)
+                    val textHeight = bounds.height()
+                    it.nativeCanvas.drawText(
+                        text,
+                        chartWidth + 8.dp.value,
+                        yOffset + textHeight / 2,
+                        textPaint
                     )
-                    drawIntoCanvas {
-                        textPaint.getTextBounds(value, 0, value.length, bounds)
-                        val textHeight = bounds.height()
-                        it.nativeCanvas.drawText(
-                            value,
-                            chartWidth + 8.dp.value,
-                            offsetPercent + textHeight / 2,
-                            textPaint
-                        )
-                    }
                 }
             }
 
