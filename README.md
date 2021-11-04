@@ -1,3 +1,3 @@
 ## Реализация рыночного графика на Compose
 
-![]screenshot/image.gif
+![](screenshot/image.gif)
