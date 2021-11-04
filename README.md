@@ -1,3 +1,3 @@
-## Реализация рыночного графика на Compose
+## Рыночный график на Compose
 
 ![](screenshot/image.gif)
