@@ -69,7 +69,7 @@ fun MarketChart(candles: List<Candle>) {
                 end = Offset(chartWidth, chartHeight)
             )
 
-            state.timeLines.value.forEach { candle ->
+            state.timeLines.forEach { candle ->
                 val offset = state.xOffset(candle)
                 if (offset !in 0f..chartWidth) return@forEach
                 drawLine(

@@ -36,7 +36,7 @@ class MarketChartState {
     private val Float.scrolledCandles: Float
         get() = this * visibleCandleCount.toFloat() / viewWidth
 
-    val timeLines = mutableStateOf(listOf<Candle>())
+    var timeLines by mutableStateOf(listOf<Candle>())
 
     val priceLines by derivedStateOf {
         val priceItem = (maxPrice - minPrice) / PRICES_COUNT
@@ -73,11 +73,11 @@ class MarketChartState {
         when {
             currentGridWidth < MIN_GRID_WIDTH -> {
                 candleInGrid = MAX_GRID_WIDTH / candleWidth
-                timeLines.value = candles.filterIndexed { index, _ -> index % candleInGrid.roundToInt() == 0 }
+                timeLines = candles.filterIndexed { index, _ -> index % candleInGrid.roundToInt() == 0 }
             }
             currentGridWidth > MAX_GRID_WIDTH -> {
                 candleInGrid = MIN_GRID_WIDTH / candleWidth
-                timeLines.value = candles.filterIndexed { index, _ -> index % candleInGrid.roundToInt() == 0 }
+                timeLines = candles.filterIndexed { index, _ -> index % candleInGrid.roundToInt() == 0 }
             }
         }
     }
